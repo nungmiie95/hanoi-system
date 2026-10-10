@@ -31,8 +31,28 @@ import fetcher
 import formulas
 import stats
 
-app = Flask(__name__)
-app.config.setdefault("DATABASE", "hanoi.db")
+import jinja2
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
+app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
+
+# Multiple fallback search paths for templates so it NEVER fails on cloud
+_candidate_template_dirs = [
+    TEMPLATE_DIR,
+    BASE_DIR,
+    os.path.join(BASE_DIR, "render_deploy", "templates"),
+    os.path.join(BASE_DIR, "render_deploy"),
+    os.path.join(os.getcwd(), "templates"),
+    os.getcwd(),
+]
+app.jinja_loader = jinja2.ChoiceLoader([
+    jinja2.FileSystemLoader(p) for p in _candidate_template_dirs
+])
+
+app.config.setdefault("DATABASE", os.path.join(BASE_DIR, "hanoi.db"))
 app.config.setdefault("JSON_AS_ASCII", False)
 
 if hasattr(app, "json") and hasattr(app.json, "ensure_ascii"):
@@ -57,18 +77,45 @@ def get_db_path() -> str:
     """Dynamically resolves SQLite path from Flask app config for test isolation."""
     try:
         if current_app and hasattr(current_app, "config") and "DATABASE" in current_app.config:
-            return current_app.config["DATABASE"]
+            p = current_app.config["DATABASE"]
+            if not os.path.isabs(p):
+                return os.path.join(BASE_DIR, p)
+            return p
     except Exception:
         pass
-    return app.config.get("DATABASE", "hanoi.db")
+    p = app.config.get("DATABASE", os.path.join(BASE_DIR, "hanoi.db"))
+    if not os.path.isabs(p):
+        return os.path.join(BASE_DIR, p)
+    return p
 
 
 def ensure_db_initialized() -> None:
-    """Ensures SQLite schema exists."""
+    """Ensures SQLite schema exists and auto-seeds with sample data if empty."""
     try:
-        database.init_db(get_db_path())
-    except Exception:
-        pass
+        db_p = get_db_path()
+        database.init_db(db_p)
+        if database.count_results(db_path=db_p) == 0:
+            database.seed_database(count_per_round=90, db_path=db_p)
+    except Exception as e:
+        app.logger.error(f"Error in ensure_db_initialized: {e}")
+
+
+@app.errorhandler(500)
+def handle_internal_error(e):
+    """Displays detailed error traceback on 500 error for easy debugging."""
+    import traceback
+    tb = traceback.format_exc()
+    return f"""<!DOCTYPE html>
+<html lang="th">
+<head><meta charset="utf-8"><title>ระบบพบข้อผิดพลาด 500</title>
+<style>body{{font-family:sans-serif;padding:30px;background:#0f172a;color:#f87171}}pre{{background:#1e293b;color:#cbd5e1;padding:15px;border-radius:8px;overflow:auto;font-size:13px}}</style>
+</head>
+<body>
+<h2>⚠️ ระบบพบข้อผิดพลาดบน Render (Debug Traceback):</h2>
+<p>รายละเอียดข้อผิดพลาดเพื่อการแก้ไข:</p>
+<pre>{tb}</pre>
+</body>
+</html>""", 500
 
 
 def get_round_schedule_info(
