@@ -489,6 +489,37 @@ async function confirmDelete(id, date, round) {
   }
 }
 
+async function confirmClearAll() {
+  const confirmed = confirm("⚠️ ยืนยันการล้างข้อมูลผลรางวัลทั้งหมดในระบบ?\n\nข้อมูลผลรางวัลทุกงวดจะถูกลบทั้งหมดและไม่สามารถกู้คืนได้ คุณต้องการดำเนินการต่อหรือไม่?");
+  if (!confirmed) return;
+
+  try {
+    let res = await fetch('/api/clear-all', { method: 'POST' });
+    if (res.status === 404) {
+      // Fallback: Delete all records iteratively if endpoint not yet deployed
+      const listRes = await fetch('/api/results?limit=1000');
+      const items = await listRes.json();
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          await fetch(`/api/results/${item.id}`, { method: 'DELETE' });
+        }
+        showToast(`ล้างข้อมูลสำเร็จ (ลบออก ${items.length} รายการ)`, 'success');
+        setTimeout(() => window.location.reload(), 800);
+        return;
+      }
+    }
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(data.message || `ล้างข้อมูลทั้งหมดสำเร็จ (${data.deleted} รายการ)`, 'success');
+      setTimeout(() => window.location.reload(), 800);
+    } else {
+      showToast(data.error || 'ล้างข้อมูลไม่สำเร็จ', 'error');
+    }
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+  }
+}
+
 async function triggerFetchLatest() {
   const btn = document.getElementById('fetch-latest-btn');
   const spinner = document.getElementById('fetch-spinner');

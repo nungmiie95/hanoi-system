@@ -90,12 +90,10 @@ def get_db_path() -> str:
 
 
 def ensure_db_initialized() -> None:
-    """Ensures SQLite schema exists and auto-seeds with sample data if empty."""
+    """Ensures SQLite schema exists."""
     try:
         db_p = get_db_path()
         database.init_db(db_p)
-        if database.count_results(db_path=db_p) == 0:
-            database.seed_database(count_per_round=90, db_path=db_p)
     except Exception as e:
         app.logger.error(f"Error in ensure_db_initialized: {e}")
 
@@ -721,6 +719,22 @@ def api_delete_result(result_id: int):
         return jsonify({"success": success})
     except OverflowError:
         return jsonify({"error": "Integer out of bounds"}), 400
+
+
+@app.route("/api/clear-all", methods=["POST", "DELETE"])
+def api_clear_all():
+    """Deletes all lottery results from database."""
+    ensure_db_initialized()
+    db_p = get_db_path()
+    try:
+        deleted_count = database.clear_all_results(db_path=db_p)
+        return jsonify({
+            "success": True,
+            "deleted": deleted_count,
+            "message": f"ล้างข้อมูลทั้งหมดสำเร็จ ({deleted_count} รายการ)"
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/fetch", methods=["POST"])

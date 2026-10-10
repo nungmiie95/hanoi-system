@@ -385,6 +385,23 @@ def delete_result(result_id: int, db_path: str = "hanoi.db") -> bool:
         return cur.rowcount > 0
 
 
+def clear_all_results(db_path: str = "hanoi.db") -> int:
+    """
+    Deletes all lottery results from database and resets autoincrement sequence.
+    Returns total count of deleted rows.
+    """
+    with db_session(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM lottery_results")
+        count = cur.fetchone()[0]
+        cur.execute("DELETE FROM lottery_results")
+        try:
+            cur.execute("DELETE FROM sqlite_sequence WHERE name = 'lottery_results'")
+        except Exception:
+            pass
+        return count
+
+
 def count_results(round_type: Optional[str] = None, db_path: str = "hanoi.db") -> int:
     """Counts total results, or results matching a specific round."""
     with db_session(db_path) as conn:
