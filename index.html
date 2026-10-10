@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- 1. Hero Header Section -->
+<div class="mb-8">
+  <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+    <div class="relative z-10">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-3">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        ระบบคำนวณสด Real-Time Auto-Adaptive
+      </div>
+      <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+        ระบบคำนวณและวิเคราะห์สถิติหวยฮานอย
+      </h1>
+      <p class="mt-2 text-sm sm:text-base text-slate-300 max-w-3xl">
+        ศูนย์รวมสถิติ ผลรางวัลย้อนหลัง จัดอันดับสูตรที่แม่นยำที่สุด (Win Rate สูงสุด) และคำนวณเลขแนะนำรอบถัดไปแบบเรียลไทม์ ครบทั้งฮานอยพิเศษ ปกติ และ VIP
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Live Countdown Ticker Card -->
+<div class="mb-8">
+  <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-5 sm:p-6 shadow-lg shadow-indigo-950/40 relative">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+          <svg class="w-6 h-6 animate-spin-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <span class="text-xs uppercase font-semibold tracking-wider text-slate-400">นับถอยหลังสู่การออกรางวัลรอบถัดไป</span>
+          <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+            <span id="countdown-round-label">
+              {% if countdown.next_round == 'special' %}ฮานอยพิเศษ (รอบ 17:30 น.)
+              {% elif countdown.next_round == 'normal' %}ฮานอยปกติ (รอบ 18:30 น.)
+              {% else %}ฮานอย VIP (รอบ 19:30 น.){% endif %}
+            </span>
+          </h2>
+        </div>
+      </div>
+
+      <!-- Digital Countdown Display -->
+      <div class="flex items-center space-x-2 sm:space-x-3 text-center">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2 min-w-[64px]">
+          <span id="countdown-hours" class="text-xl sm:text-2xl font-mono font-bold text-white">00</span>
+          <span class="block text-[10px] text-slate-400 uppercase font-medium">ชั่วโมง</span>
+        </div>
+        <span class="text-slate-600 font-bold text-xl">:</span>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2 min-w-[64px]">
+          <span id="countdown-minutes" class="text-xl sm:text-2xl font-mono font-bold text-indigo-400">00</span>
+          <span class="block text-[10px] text-slate-400 uppercase font-medium">นาที</span>
+        </div>
+        <span class="text-slate-600 font-bold text-xl">:</span>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2 min-w-[64px]">
+          <span id="countdown-seconds" class="text-xl sm:text-2xl font-mono font-bold text-emerald-400">00</span>
+          <span class="block text-[10px] text-slate-400 uppercase font-medium">วินาที</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Latest Results Grid (3 Rounds: พิเศษ, ปกติ, VIP) -->
+<div class="mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+      <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+      ผลรางวัลล่าสุด (3 รอบประจำวัน)
+    </h2>
+    <a href="/manage" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">ดูประวัติทั้งหมด →</a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    
+    <!-- Card 1: ฮานอยพิเศษ (17:30 น.) -->
+    <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+      <div class="flex items-center justify-between mb-3">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          ฮานอยพิเศษ (17:30 น.)
+        </span>
+        <span class="text-xs font-mono text-slate-400">{{ latest_special.draw_date if latest_special else '-' }}</span>
+      </div>
+
+      <div class="my-4 text-center">
+        <span class="text-xs text-slate-400 uppercase font-medium">รางวัลพิเศษ</span>
+        <div class="text-3xl sm:text-4xl font-mono font-black text-white tracking-wider my-1">
+          {{ latest_special.special_prize if latest_special else '-----' }}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800 text-center">
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">3 ตัวบน</span>
+          <span class="text-lg font-mono font-bold text-emerald-400">{{ latest_special.top3 if latest_special else '-' }}</span>
+        </div>
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">2 ตัวบน</span>
+          <span class="text-lg font-mono font-bold text-emerald-300">{{ latest_special.top2 if latest_special else '-' }}</span>
+        </div>
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">2 ตัวล่าง</span>
+          <span class="text-lg font-mono font-bold text-amber-400">{{ latest_special.bottom2 if latest_special else '-' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: ฮานอยปกติ (18:30 น.) -->
+    <div class="bg-slate-900 border border-sky-500/30 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-sky-500/50 transition-all">
+      <div class="flex items-center justify-between mb-3">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">
+          ฮานอยปกติ (18:30 น.)
+        </span>
+        <span class="text-xs font-mono text-slate-400">{{ latest_normal.draw_date if latest_normal else '-' }}</span>
+      </div>
+
+      <div class="my-4 text-center">
+        <span class="text-xs text-slate-400 uppercase font-medium">รางวัลพิเศษ</span>
+        <div class="text-3xl sm:text-4xl font-mono font-black text-white tracking-wider my-1">
+          {{ latest_normal.special_prize if latest_normal else '-----' }}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800 text-center">
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">3 ตัวบน</span>
+          <span class="text-lg font-mono font-bold text-sky-400">{{ latest_normal.top3 if latest_normal else '-' }}</span>
+        </div>
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">2 ตัวบน</span>
+          <span class="text-lg font-mono font-bold text-sky-300">{{ latest_normal.top2 if latest_normal else '-' }}</span>
+        </div>
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">2 ตัวล่าง</span>
+          <span class="text-lg font-mono font-bold text-amber-400">{{ latest_normal.bottom2 if latest_normal else '-' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: ฮานอย VIP (19:30 น.) -->
+    <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-amber-500/50 transition-all">
+      <div class="flex items-center justify-between mb-3">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          ฮานอย VIP (19:30 น.)
+        </span>
+        <span class="text-xs font-mono text-slate-400">{{ latest_vip.draw_date if latest_vip else '-' }}</span>
+      </div>
+
+      <div class="my-4 text-center">
+        <span class="text-xs text-slate-400 uppercase font-medium">รางวัลพิเศษ</span>
+        <div class="text-3xl sm:text-4xl font-mono font-black text-white tracking-wider my-1">
+          {{ latest_vip.special_prize if latest_vip else '-----' }}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800 text-center">
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">3 ตัวบน</span>
+          <span class="text-lg font-mono font-bold text-amber-400">{{ latest_vip.top3 if latest_vip else '-' }}</span>
+        </div>
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">2 ตัวบน</span>
+          <span class="text-lg font-mono font-bold text-amber-300">{{ latest_vip.top2 if latest_vip else '-' }}</span>
+        </div>
+        <div class="bg-slate-950/60 rounded-lg p-2">
+          <span class="text-[11px] text-slate-400 block">2 ตัวล่าง</span>
+          <span class="text-lg font-mono font-bold text-amber-400">{{ latest_vip.bottom2 if latest_vip else '-' }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 4. Top Recommendation Card (#1 Formula) -->
+<div class="mb-10">
+  <div class="bg-gradient-to-br from-slate-900 to-indigo-950/60 border border-indigo-500/40 rounded-2xl p-6 sm:p-8 shadow-2xl relative">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      
+      <div class="flex-1">
+        <div class="flex items-center space-x-2 mb-2">
+          <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-bold bg-amber-400/10 text-amber-300 border border-amber-400/30">
+            🏆 สูตรอันดับ 1 ที่แม่นยำที่สุด
+          </span>
+          <span class="text-xs text-slate-400">สำหรับรอบถัดไป</span>
+        </div>
+
+        <h3 class="text-xl sm:text-2xl font-bold text-white mb-2">
+          {{ top_formula.formula_name if top_formula else 'สูตรคำนวณอัตโนมัติ' }}
+        </h3>
+
+        <div class="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-300">
+          <span class="bg-slate-950/80 px-3 py-1 rounded-lg border border-slate-800">
+            Win Rate: <strong class="text-emerald-400 font-mono">{{ '%.1f'|format(top_formula.win_rate) if top_formula else '0.0' }}%</strong>
+          </span>
+          <span class="bg-slate-950/80 px-3 py-1 rounded-lg border border-slate-800">
+            สถิติต่อเนื่อง: <strong class="text-orange-400 font-mono">🔥 {{ top_formula.streak if top_formula else 0 }} งวดติด</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- Single Swipe Hero Highlight -->
+      <div class="flex items-center space-x-6 bg-slate-950/80 p-4 sm:p-5 rounded-2xl border border-indigo-500/30">
+        <div class="text-center">
+          <span class="text-xs font-semibold text-slate-400 uppercase block mb-1">รูดตัวเดียว (บน-ล่าง)</span>
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-500 text-slate-950 font-black text-3xl sm:text-4xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+            {{ sets.single_swipe if sets and sets.single_swipe else '-' }}
+          </div>
+        </div>
+
+        <div class="flex flex-col space-y-2">
+          <!-- 1-Click Copy Text Button -->
+          <button id="copy-summary-btn" 
+                  data-copy-text="{{ copy_text }}"
+                  class="inline-flex items-center justify-center px-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+            <span id="copy-summary-text">คัดลอกข้อความ</span>
+          </button>
+
+          <a href="/recommend" class="inline-flex items-center justify-center px-4 py-2 rounded-xl font-medium text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors">
+            ดูชุดตัวเลขทั้งหมดแบบเต็ม →
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 5. Quick Access Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+  <a href="/stats" class="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 p-4 rounded-xl text-center transition-all hover:bg-slate-850">
+    <div class="w-10 h-10 mx-auto rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-2">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+    </div>
+    <span class="text-sm font-semibold text-white block">กราฟสถิติ</span>
+    <span class="text-[11px] text-slate-400">เลขออกบ่อย/ค้างนาน</span>
+  </a>
+
+  <a href="/leaderboard" class="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 p-4 rounded-xl text-center transition-all hover:bg-slate-850">
+    <div class="w-10 h-10 mx-auto rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center mb-2">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+    </div>
+    <span class="text-sm font-semibold text-white block">ตารางจัดอันดับ</span>
+    <span class="text-[11px] text-slate-400">Backtest Win Rate</span>
+  </a>
+
+  <a href="/recommend" class="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 p-4 rounded-xl text-center transition-all hover:bg-slate-850">
+    <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-2">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+    </div>
+    <span class="text-sm font-semibold text-white block">ชุดเลขแนะนำ</span>
+    <span class="text-[11px] text-slate-400">สู้ชีวิต 10-50 ตัว</span>
+  </a>
+
+  <a href="/manage" class="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 p-4 rounded-xl text-center transition-all hover:bg-slate-850">
+    <div class="w-10 h-10 mx-auto rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center mb-2">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+    </div>
+    <span class="text-sm font-semibold text-white block">จัดการข้อมูล</span>
+    <span class="text-[11px] text-slate-400">ดึงผล / CSV / แก้ไข</span>
+  </a>
+</div>
+
+{% endblock %}

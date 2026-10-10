@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Action & Header Bar -->
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+      จัดการข้อมูลผลรางวัล (Data Management)
+    </h1>
+    <p class="text-xs sm:text-sm text-slate-400">
+      บันทึก แก้ไข ลบ ดึงผลรางวัลอัตโนมัติ และสำรองข้อมูล CSV / JSON (ทั้งหมด {{ total_count }} งวด)
+    </p>
+  </div>
+
+  <!-- Primary Action Buttons -->
+  <div class="flex flex-wrap items-center gap-2">
+    <!-- Add Result Button -->
+    <button onclick="openAddModal()" class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all">
+      <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+      + เพิ่มผลรางวัล
+    </button>
+
+    <!-- Fetch Latest Button -->
+    <button id="fetch-latest-btn" onclick="triggerFetchLatest()" class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 transition-all">
+      <svg id="fetch-spinner" class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+      <span>ดึงผลล่าสุดทันที</span>
+    </button>
+
+    <!-- Import Modal Button -->
+    <button onclick="openImportModal()" class="inline-flex items-center px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors">
+      📥 นำเข้าไฟล์
+    </button>
+
+    <!-- Export Buttons -->
+    <a href="/api/export/csv" class="inline-flex items-center px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors">
+      📤 ส่งออก CSV
+    </a>
+    <a href="/api/export/json" class="inline-flex items-center px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors">
+      📤 ส่งออก JSON
+    </a>
+  </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6">
+  <form method="GET" action="/manage" class="flex flex-wrap items-center gap-3">
+    <div class="flex items-center space-x-2">
+      <label class="text-xs text-slate-400">รอบ:</label>
+      <select name="round" onchange="this.form.submit()" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200">
+        <option value="all" {% if selected_round == 'all' %}selected{% endif %}>ทุกรอบ</option>
+        <option value="special" {% if selected_round == 'special' %}selected{% endif %}>ฮานอยพิเศษ</option>
+        <option value="normal" {% if selected_round == 'normal' %}selected{% endif %}>ฮานอยปกติ</option>
+        <option value="vip" {% if selected_round == 'vip' %}selected{% endif %}>ฮานอย VIP</option>
+      </select>
+    </div>
+  </form>
+</div>
+
+<!-- Results Table -->
+<div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden mb-6">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-950/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+        <tr>
+          <th class="py-3 px-4">วันที่</th>
+          <th class="py-3 px-4">รอบหวย</th>
+          <th class="py-3 px-4">รางวัลพิเศษ</th>
+          <th class="py-3 px-4">3 ตัวบน</th>
+          <th class="py-3 px-4">2 ตัวบน</th>
+          <th class="py-3 px-4">2 ตัวล่าง</th>
+          <th class="py-3 px-4 text-right">การจัดการ</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800 font-mono text-xs">
+        {% for r in results %}
+        <tr class="hover:bg-slate-800/40 transition-colors" id="row-{{ r.id }}">
+          
+          <td class="py-3 px-4 font-sans text-slate-200">{{ r.draw_date }}</td>
+          
+          <td class="py-3 px-4 font-sans">
+            {% if r.round_type == 'special' %}
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">พิเศษ</span>
+            {% elif r.round_type == 'normal' %}
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">ปกติ</span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">VIP</span>
+            {% endif %}
+          </td>
+
+          <td class="py-3 px-4 font-bold text-white text-sm">{{ r.special_prize }}</td>
+          <td class="py-3 px-4 font-bold text-sky-400">{{ r.top3 }}</td>
+          <td class="py-3 px-4 font-bold text-emerald-400">{{ r.top2 }}</td>
+          <td class="py-3 px-4 font-bold text-amber-400">{{ r.bottom2 }}</td>
+
+          <td class="py-3 px-4 text-right font-sans space-x-2">
+            <button onclick="openEditModal({{ r | tojson | forceescape }})" class="text-indigo-400 hover:text-indigo-300 font-medium">แก้ไข</button>
+            <button onclick="confirmDelete({{ r.id }}, '{{ r.draw_date }}', '{{ r.round_type }}')" class="text-rose-400 hover:text-rose-300 font-medium">ลบ</button>
+          </td>
+
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="py-8 text-center text-slate-500 font-sans">
+            ยังไม่มีข้อมูลผลรางวัลในระบบ
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= MODAL: ADD / EDIT RESULT ================= -->
+<div id="result-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <h2 id="modal-title" class="text-lg font-bold text-white mb-4">เพิ่มผลรางวัล</h2>
+    
+    <form id="result-form" onsubmit="saveResult(event)" class="space-y-4 text-sm">
+      <input type="hidden" id="form-id" value="">
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">วันที่ออกรางวัล</label>
+        <input type="date" id="form-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">รอบหวย</label>
+        <select id="form-round" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500">
+          <option value="special">ฮานอยพิเศษ (17:30 น.)</option>
+          <option value="normal">ฮานอยปกติ (18:30 น.)</option>
+          <option value="vip">ฮานอย VIP (19:30 น.)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">รางวัลพิเศษ (5 หรือ 6 หลัก)</label>
+        <input type="text" id="form-special" maxlength="6" pattern="[0-9]{3,6}" required 
+               placeholder="เช่น 82594"
+               oninput="autoDeriveTops(this.value)"
+               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-mono text-white text-lg tracking-wider focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <!-- Auto-Derived Preview -->
+      <div class="grid grid-cols-2 gap-3 p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs">
+        <div>
+          <span class="text-slate-500 block">3 ตัวบน (อัตโนมัติ):</span>
+          <span id="preview-top3" class="font-mono font-bold text-sky-400 text-base">-</span>
+        </div>
+        <div>
+          <span class="text-slate-500 block">2 ตัวบน (อัตโนมัติ):</span>
+          <span id="preview-top2" class="font-mono font-bold text-emerald-400 text-base">-</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">เลข 2 ตัวล่าง (2 หลัก)</label>
+        <input type="text" id="form-bottom2" maxlength="2" pattern="[0-9]{2}" required 
+               placeholder="เช่น 37"
+               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-mono text-white text-lg tracking-wider focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+        <button type="button" onclick="closeResultModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white">ยกเลิก</button>
+        <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30">บันทึกข้อมูล</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: IMPORT CSV / JSON ================= -->
+<div id="import-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <h2 class="text-lg font-bold text-white mb-2">นำเข้าข้อมูลผลรางวัล</h2>
+    <p class="text-xs text-slate-400 mb-4">รองรับไฟล์รูปแบบ CSV (.csv) หรือ JSON (.json)</p>
+
+    <form id="import-form" onsubmit="uploadImport(event)" class="space-y-4 text-sm">
+      <div>
+        <label class="block text-xs text-slate-400 mb-2">เลือกไฟล์</label>
+        <input type="file" id="import-file" accept=".csv,.json" required 
+               class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <input type="checkbox" id="import-skip" checked class="rounded border-slate-800 text-indigo-600 focus:ring-indigo-500">
+        <label for="import-skip" class="text-xs text-slate-300">ข้ามข้อมูลที่มีอยู่แล้ว (Skip Existing)</label>
+      </div>
+
+      <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+        <button type="button" onclick="closeImportModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white">ยกเลิก</button>
+        <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white">อัปโหลดและนำเข้า</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Header & Filter Bar -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+      สถิติและความถี่ตัวเลข
+    </h1>
+    <p class="text-xs sm:text-sm text-slate-400">
+      วิเคราะห์สถิติความถี่ตัวเลข 0-9 และตารางเลขออกบ่อย/ค้างนาน จากทั้งหมด {{ total_draws }} งวด
+    </p>
+  </div>
+
+  <!-- Round Filter Tabs -->
+  <div class="inline-flex p-1 bg-slate-900 border border-slate-800 rounded-xl space-x-1">
+    <a href="/stats?round=all" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if selected_round == 'all' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">ทุกรอบ</a>
+    <a href="/stats?round=special" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if selected_round == 'special' %}bg-emerald-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">พิเศษ</a>
+    <a href="/stats?round=normal" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if selected_round == 'normal' %}bg-sky-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">ปกติ</a>
+    <a href="/stats?round=vip" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if selected_round == 'vip' %}bg-amber-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">VIP</a>
+  </div>
+</div>
+
+<!-- Frequency Charts Section (2 Columns) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  
+  <!-- Chart 1: ความถี่เลข 2 ตัวบน -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-bold text-white flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+        ความถี่ตัวเลข 0-9 (เลข 2 ตัวบน)
+      </h2>
+      <span class="text-xs font-mono text-slate-400">2 ตัวบน</span>
+    </div>
+    <div class="relative h-64 sm:h-72">
+      <canvas id="topDigitsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: ความถี่เลข 2 ตัวล่าง -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-bold text-white flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+        ความถี่ตัวเลข 0-9 (เลข 2 ตัวล่าง)
+      </h2>
+      <span class="text-xs font-mono text-slate-400">2 ตัวล่าง</span>
+    </div>
+    <div class="relative h-64 sm:h-72">
+      <canvas id="bottomDigitsChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hot & Cold Tables Section (2 Columns: Top2 vs Bottom2) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  
+  <!-- Column 1: สถิติ 2 ตัวบน -->
+  <div class="space-y-6">
+    <!-- Hot Top 2 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <h3 class="text-sm font-bold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        🔥 5 อันดับเลข 2 ตัวบน ออกบ่อยที่สุด (Hot)
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-800 pb-2">
+              <th class="py-2">ตัวเลข</th>
+              <th class="py-2 text-right">จำนวนครั้ง</th>
+              <th class="py-2 text-right">เปอร์เซ็นต์</th>
+              <th class="py-2 text-right">ออกล่าสุด</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            {% for item in hot_cold.hot_top2 %}
+            <tr class="hover:bg-slate-800/40">
+              <td class="py-2.5 font-bold text-rose-300 text-sm">{{ item.number }}</td>
+              <td class="py-2.5 text-right text-slate-200">{{ item.count }} ครั้ง</td>
+              <td class="py-2.5 text-right text-emerald-400">{{ item.frequency }}%</td>
+              <td class="py-2.5 text-right text-slate-400">{{ item.gap }} งวดก่อน</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="py-4 text-center text-slate-500 font-sans">ไม่มีข้อมูล</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cold Top 2 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <h3 class="text-sm font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        ❄️ 5 อันดับเลข 2 ตัวบน ค้างนานที่สุด (Cold)
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-800 pb-2">
+              <th class="py-2">ตัวเลข</th>
+              <th class="py-2 text-right">ค้างมาแล้ว</th>
+              <th class="py-2 text-right">จำนวนครั้งที่เคยออก</th>
+              <th class="py-2 text-right">เปอร์เซ็นต์</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            {% for item in hot_cold.cold_top2 %}
+            <tr class="hover:bg-slate-800/40">
+              <td class="py-2.5 font-bold text-blue-300 text-sm">{{ item.number }}</td>
+              <td class="py-2.5 text-right text-amber-400 font-bold">{{ item.gap }} งวด</td>
+              <td class="py-2.5 text-right text-slate-200">{{ item.count }} ครั้ง</td>
+              <td class="py-2.5 text-right text-slate-400">{{ item.frequency }}%</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="py-4 text-center text-slate-500 font-sans">ไม่มีข้อมูล</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Column 2: สถิติ 2 ตัวล่าง -->
+  <div class="space-y-6">
+    <!-- Hot Bottom 2 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <h3 class="text-sm font-bold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        🔥 5 อันดับเลข 2 ตัวล่าง ออกบ่อยที่สุด (Hot)
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-800 pb-2">
+              <th class="py-2">ตัวเลข</th>
+              <th class="py-2 text-right">จำนวนครั้ง</th>
+              <th class="py-2 text-right">เปอร์เซ็นต์</th>
+              <th class="py-2 text-right">ออกล่าสุด</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            {% for item in hot_cold.hot_bottom2 %}
+            <tr class="hover:bg-slate-800/40">
+              <td class="py-2.5 font-bold text-rose-300 text-sm">{{ item.number }}</td>
+              <td class="py-2.5 text-right text-slate-200">{{ item.count }} ครั้ง</td>
+              <td class="py-2.5 text-right text-emerald-400">{{ item.frequency }}%</td>
+              <td class="py-2.5 text-right text-slate-400">{{ item.gap }} งวดก่อน</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="py-4 text-center text-slate-500 font-sans">ไม่มีข้อมูล</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cold Bottom 2 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <h3 class="text-sm font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        ❄️ 5 อันดับเลข 2 ตัวล่าง ค้างนานที่สุด (Cold)
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-800 pb-2">
+              <th class="py-2">ตัวเลข</th>
+              <th class="py-2 text-right">ค้างมาแล้ว</th>
+              <th class="py-2 text-right">จำนวนครั้งที่เคยออก</th>
+              <th class="py-2 text-right">เปอร์เซ็นต์</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            {% for item in hot_cold.cold_bottom2 %}
+            <tr class="hover:bg-slate-800/40">
+              <td class="py-2.5 font-bold text-blue-300 text-sm">{{ item.number }}</td>
+              <td class="py-2.5 text-right text-amber-400 font-bold">{{ item.gap }} งวด</td>
+              <td class="py-2.5 text-right text-slate-200">{{ item.count }} ครั้ง</td>
+              <td class="py-2.5 text-right text-slate-400">{{ item.frequency }}%</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="py-4 text-center text-slate-500 font-sans">ไม่มีข้อมูล</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Pass JSON Data to Client Script -->
+<script id="stats-data" type="application/json">
+  {{ stats | tojson }}
+</script>
+
+{% endblock %}

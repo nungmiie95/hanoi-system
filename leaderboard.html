@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Header & Filter Bar -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+      ตารางจัดอันดับสูตร (Formula Leaderboard)
+    </h1>
+    <p class="text-xs sm:text-sm text-slate-400">
+      ผลการทดสอบย้อนหลัง (Backtesting) จัดอันดับตาม Win Rate % และความต่อเนื่อง
+    </p>
+  </div>
+
+  <form method="GET" action="/leaderboard" class="flex flex-wrap items-center gap-2">
+    <select name="round" onchange="this.form.submit()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-medium focus:ring-2 focus:ring-indigo-500">
+      <option value="all" {% if target_round == 'all' %}selected{% endif %}>ทุกรอบรวมกัน</option>
+      <option value="special" {% if target_round == 'special' %}selected{% endif %}>ฮานอยพิเศษ (17:30)</option>
+      <option value="normal" {% if target_round == 'normal' %}selected{% endif %}>ฮานอยปกติ (18:30)</option>
+      <option value="vip" {% if target_round == 'vip' %}selected{% endif %}>ฮานอย VIP (19:30)</option>
+    </select>
+
+    <select name="eval" onchange="this.form.submit()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-medium focus:ring-2 focus:ring-indigo-500">
+      <option value="30" {% if num_eval == 30 %}selected{% endif %}>ย้อนหลัง 30 งวด</option>
+      <option value="50" {% if num_eval == 50 %}selected{% endif %}>ย้อนหลัง 50 งวด</option>
+      <option value="90" {% if num_eval == 90 %}selected{% endif %}>ย้อนหลัง 90 งวด</option>
+    </select>
+  </form>
+</div>
+
+<!-- Champion Showcase Card -->
+{% if leaderboard and leaderboard|length > 0 %}
+{% set champ = leaderboard[0] %}
+<div class="mb-6 bg-gradient-to-r from-amber-500/10 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-2xl p-5 sm:p-6 shadow-xl">
+  <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div class="flex items-center space-x-4">
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-500 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+        #1
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 font-mono">{{ champ.formula_id }}</span>
+          <span class="text-xs text-slate-400">{{ champ.category }}</span>
+        </div>
+        <h2 class="text-lg sm:text-xl font-bold text-white">{{ champ.formula_name }}</h2>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-6 text-sm">
+      <div>
+        <span class="text-xs text-slate-400 block">Win Rate</span>
+        <span class="text-2xl font-mono font-black text-emerald-400">{{ '%.1f'|format(champ.win_rate) }}%</span>
+      </div>
+      <div>
+        <span class="text-xs text-slate-400 block">เข้าเป้า</span>
+        <span class="text-lg font-mono font-bold text-white">{{ champ.hits }} / {{ champ.total }} งวด</span>
+      </div>
+      <div>
+        <span class="text-xs text-slate-400 block">ความต่อเนื่อง</span>
+        <span class="text-sm font-bold text-orange-400">🔥 {{ champ.streak }} งวดติด</span>
+      </div>
+      <a href="/recommend?round={{ target_round }}&formula={{ champ.formula_id }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all">
+        ดูเลขแนะนำ →
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Formula Rankings Table -->
+<div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-950/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+        <tr>
+          <th class="py-3 px-4 text-center w-16">อันดับ</th>
+          <th class="py-3 px-4 w-24">รหัสสูตร</th>
+          <th class="py-3 px-4">ชื่อสูตรคำนวณ</th>
+          <th class="py-3 px-4">หมวดหมู่</th>
+          <th class="py-3 px-4 w-36">ความแม่นยำ (Win Rate)</th>
+          <th class="py-3 px-4 text-center">เข้าเป้า / ทั้งหมด</th>
+          <th class="py-3 px-4 text-center">สถิติต่อเนื่อง</th>
+          <th class="py-3 px-4 text-right">ดำเนินการ</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800">
+        {% for f in leaderboard %}
+        <tr class="hover:bg-slate-800/40 transition-colors">
+          
+          <!-- Rank Badge -->
+          <td class="py-3.5 px-4 text-center">
+            {% if f.rank == 1 %}
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-yellow-400 text-slate-950 font-black text-xs">1</span>
+            {% elif f.rank == 2 %}
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-300 text-slate-950 font-black text-xs">2</span>
+            {% elif f.rank == 3 %}
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-600 text-white font-black text-xs">3</span>
+            {% else %}
+            <span class="font-mono text-slate-400 text-xs">{{ f.rank }}</span>
+            {% endif %}
+          </td>
+
+          <!-- ID -->
+          <td class="py-3.5 px-4 font-mono font-bold text-indigo-400 text-xs">{{ f.formula_id }}</td>
+
+          <!-- Name -->
+          <td class="py-3.5 px-4 font-medium text-white">{{ f.formula_name }}</td>
+
+          <!-- Category -->
+          <td class="py-3.5 px-4">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+              {{ f.category }}
+            </span>
+          </td>
+
+          <!-- Win Rate Bar -->
+          <td class="py-3.5 px-4">
+            <div class="flex items-center space-x-2">
+              <span class="font-mono font-bold text-xs {% if f.win_rate >= 70 %}text-emerald-400{% elif f.win_rate >= 50 %}text-sky-400{% else %}text-slate-400{% endif %}">
+                {{ '%.1f'|format(f.win_rate) }}%
+              </span>
+              <div class="flex-grow bg-slate-800 rounded-full h-1.5 w-16 overflow-hidden">
+                <div class="h-1.5 rounded-full {% if f.win_rate >= 70 %}bg-emerald-400{% elif f.win_rate >= 50 %}bg-sky-400{% else %}bg-slate-500{% endif %}" style="width: {{ f.win_rate }}%"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Hits / Total -->
+          <td class="py-3.5 px-4 text-center font-mono text-xs text-slate-300">
+            {{ f.hits }} / {{ f.total }}
+          </td>
+
+          <!-- Streak Badge -->
+          <td class="py-3.5 px-4 text-center">
+            {% if f.streak >= 2 %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/30">
+              🔥 {{ f.streak }} งวดติด
+            </span>
+            {% else %}
+            <span class="text-xs text-slate-500 font-mono">{{ f.streak }}</span>
+            {% endif %}
+          </td>
+
+          <!-- Action -->
+          <td class="py-3.5 px-4 text-right">
+            <a href="/recommend?round={{ target_round }}&formula={{ f.formula_id }}" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+              ดูเลขชุด →
+            </a>
+          </td>
+
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="py-8 text-center text-slate-500">
+            ยังไม่มีข้อมูลสูตรในระบบ กรุณาใส่ข้อมูลผลรางวัลเพื่อเริ่มต้นคำนวณ
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

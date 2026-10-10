@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Header & Controls -->
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+  <div>
+    <div class="flex items-center space-x-2 mb-1">
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+        รอบ: {{ round_name_thai }}
+      </span>
+      <span class="text-xs text-slate-400">ประจำวันที่ {{ draw_date }}</span>
+    </div>
+    <h1 class="text-2xl font-bold text-white tracking-tight">
+      เลขเด่นและชุดตัวเลขส่งมอบ (Deliverable Sets)
+    </h1>
+    <p class="text-xs text-slate-400">
+      คำนวณจากสูตรอันดับ 1: <strong class="text-slate-200">{{ top_formula.formula_name if top_formula else 'สูตรคำนวณอัตโนมัติ' }}</strong> (Win Rate: <strong class="text-emerald-400">{{ '%.1f'|format(top_formula.win_rate) if top_formula else '0.0' }}%</strong>)
+    </p>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-3">
+    <!-- Round Switcher -->
+    <div class="inline-flex p-1 bg-slate-900 border border-slate-800 rounded-xl space-x-1">
+      <a href="/recommend?round=special" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if target_round == 'special' %}bg-emerald-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">พิเศษ</a>
+      <a href="/recommend?round=normal" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if target_round == 'normal' %}bg-sky-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">ปกติ</a>
+      <a href="/recommend?round=vip" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if target_round == 'vip' %}bg-amber-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">VIP</a>
+    </div>
+
+    <!-- Master 1-Click Copy Text Button -->
+    <button id="master-copy-btn" 
+            data-copy-text="{{ formatted_copy_text }}"
+            class="inline-flex items-center px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+      <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+      </svg>
+      <span id="master-copy-text">คัดลอกข้อความ</span>
+    </button>
+  </div>
+</div>
+
+<!-- ================= SET 1: เลขรูดตัวเดียว (บนล่าง) & 19 ประตู ================= -->
+<div class="mb-6 bg-slate-900 border border-amber-500/30 rounded-2xl p-5 sm:p-6 shadow-xl">
+  <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-800">
+    <div class="flex items-center space-x-4">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-500 text-slate-950 font-black text-3xl sm:text-4xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+        {{ sets.single_swipe if sets and sets.single_swipe else '-' }}
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          ⭐ เลขรูดตัวเดียว (บน-ล่าง)
+        </h2>
+        <p class="text-xs text-slate-400">เลขเด่นวิ่ง/รูด 1 ตัว และชุด 19 ประตู (บน-ล่าง)</p>
+      </div>
+    </div>
+
+    <button onclick="copySnippet('{{ sets.single_swipe if sets and sets.single_swipe else '' }}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors">
+      คัดลอกเฉพาะเลขรูด
+    </button>
+  </div>
+
+  <div>
+    <span class="text-xs font-semibold text-slate-400 block mb-2">ชุด 19 ประตู (19 ตัว):</span>
+    <div class="flex flex-wrap gap-1.5">
+      {% if sets and sets.swipe_numbers %}
+        {% for num in sets.swipe_numbers %}
+        <span class="px-2.5 py-1 rounded-lg bg-slate-950 font-mono text-sm font-bold text-amber-300 border border-slate-800">
+          {{ num }}
+        </span>
+        {% endfor %}
+      {% else %}
+        <span class="text-xs text-slate-500">-</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ================= SET 2: ชุดท็อปสู้ชีวิตสู้ทุกคน (บน-ล่าง) ================= -->
+<div class="mb-6 bg-slate-900 border border-indigo-500/30 rounded-2xl p-5 sm:p-6 shadow-xl">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        📌 ชุดท็อปสู้ชีวิตสู้ทุกคน (บน-ล่าง)
+      </h2>
+      <p class="text-xs text-slate-400">ชุดตัวเลขคัดพิเศษระดับความแม่นยำสูง (10, 20, 25, 40 ตัว)</p>
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    {% for tier in ['10', '20', '25', '40'] %}
+    <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-indigo-400">{{ tier }} ตัวสู้บนล่าง:</span>
+        <button onclick="copySnippet('{{ (sets.fight_sets[tier]|join(' ')) if sets and sets.fight_sets and sets.fight_sets[tier] else '' }}')" class="text-[11px] text-slate-400 hover:text-white">คัดลอก</button>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        {% if sets and sets.fight_sets and sets.fight_sets[tier] %}
+          {% for num in sets.fight_sets[tier] %}
+          <span class="px-2 py-0.5 rounded bg-slate-900 font-mono text-xs font-bold text-white border border-slate-800">{{ num }}</span>
+          {% endfor %}
+        {% else %}
+          <span class="text-xs text-slate-500">-</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ================= SET 3: เลขชุดบน-ล่าง ================= -->
+<div class="mb-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+  <h2 class="text-lg font-bold text-white mb-3">📌 เลขชุดบน-ล่าง (10, 20, 30, 40, 50 ตัว)</h2>
+  <div class="space-y-3">
+    {% for tier in ['10', '20', '30', '40', '50'] %}
+    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-bold text-emerald-400">{{ tier }} ตัวบนล่าง:</span>
+        <button onclick="copySnippet('{{ (sets.both_sets[tier]|join(' ')) if sets and sets.both_sets and sets.both_sets[tier] else '' }}')" class="text-[11px] text-slate-400 hover:text-white">คัดลอก</button>
+      </div>
+      <div class="flex flex-wrap gap-1">
+        {% if sets and sets.both_sets and sets.both_sets[tier] %}
+          {% for num in sets.both_sets[tier] %}
+          <span class="px-2 py-0.5 rounded bg-slate-900 font-mono text-xs text-slate-200 border border-slate-800">{{ num }}</span>
+          {% endfor %}
+        {% else %}
+          <span class="text-xs text-slate-500">-</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ================= SET 4 & 5: เลขชุดบน และ เลขชุดล่าง (2 Columns) ================= -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  
+  <!-- เลขชุดบน -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+    <h2 class="text-base font-bold text-sky-400 mb-3">📌 เลขชุดบน (10, 20, 30, 40, 50 ตัวบน)</h2>
+    <div class="space-y-3">
+      {% for tier in ['10', '20', '30', '40', '50'] %}
+      <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-bold text-sky-300">{{ tier }} ตัวบน:</span>
+          <button onclick="copySnippet('{{ (sets.top_sets[tier]|join(' ')) if sets and sets.top_sets and sets.top_sets[tier] else '' }}')" class="text-[11px] text-slate-400 hover:text-white">คัดลอก</button>
+        </div>
+        <div class="flex flex-wrap gap-1">
+          {% if sets and sets.top_sets and sets.top_sets[tier] %}
+            {% for num in sets.top_sets[tier] %}
+            <span class="px-2 py-0.5 rounded bg-slate-900 font-mono text-xs text-slate-200 border border-slate-800">{{ num }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="text-xs text-slate-500">-</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- เลขชุดล่าง -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+    <h2 class="text-base font-bold text-amber-400 mb-3">📌 เลขชุดล่าง (10, 20, 30, 40, 50 ตัวล่าง)</h2>
+    <div class="space-y-3">
+      {% for tier in ['10', '20', '30', '40', '50'] %}
+      <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-bold text-amber-300">{{ tier }} ตัวล่าง:</span>
+          <button onclick="copySnippet('{{ (sets.bottom_sets[tier]|join(' ')) if sets and sets.bottom_sets and sets.bottom_sets[tier] else '' }}')" class="text-[11px] text-slate-400 hover:text-white">คัดลอก</button>
+        </div>
+        <div class="flex flex-wrap gap-1">
+          {% if sets and sets.bottom_sets and sets.bottom_sets[tier] %}
+            {% for num in sets.bottom_sets[tier] %}
+            <span class="px-2 py-0.5 rounded bg-slate-900 font-mono text-xs text-slate-200 border border-slate-800">{{ num }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="text-xs text-slate-500">-</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= SET 6: Group Copy Preview Card ================= -->
+<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+      📱 ตัวอย่างข้อความสำหรับส่งเข้ากลุ่ม (LINE / Telegram / Facebook)
+    </h3>
+    <button onclick="copySnippet(document.getElementById('raw-copy-preview').innerText)" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors">
+      คัดลอกกล่องนี้
+    </button>
+  </div>
+  <pre id="raw-copy-preview" class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-emerald-400 font-mono text-xs whitespace-pre-wrap leading-relaxed overflow-x-auto">{{ formatted_copy_text }}</pre>
+</div>
+
+{% endblock %}

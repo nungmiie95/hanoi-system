@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-950 text-slate-100 antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if title %}{{ title }} - {% endif %}ระบบคำนวณและวิเคราะห์สถิติหวยฮานอย</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          },
+          fontFamily: {
+            sans: ['Prompt', 'Kanit', 'Sarabun', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Prompt & Kanit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: 'Prompt', system-ui, sans-serif; }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="min-h-full flex flex-col bg-slate-950 text-slate-100">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <nav class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Brand Logo & Thai Title -->
+        <div class="flex items-center space-x-3">
+          <a href="/" class="flex items-center space-x-3 group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+              <span class="text-xl font-black text-white">VN</span>
+            </div>
+            <div>
+              <span class="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-1.5">
+                หวยฮานอย
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>สด
+                </span>
+              </span>
+              <p class="text-xs text-slate-400 hidden sm:block">ระบบคำนวณและวิเคราะห์สถิติอัจฉริยะ</p>
+            </div>
+          </a>
+        </div>
+
+        <!-- Desktop Navigation Links -->
+        <div class="hidden md:flex items-center space-x-1 lg:space-x-2">
+          <a href="/" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'index' %}bg-indigo-600 text-white shadow-sm{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+            แดชบอร์ดสด
+          </a>
+          <a href="/stats" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'stats' %}bg-indigo-600 text-white shadow-sm{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+            สถิติและความถี่
+          </a>
+          <a href="/leaderboard" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'leaderboard' %}bg-indigo-600 text-white shadow-sm{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+            จัดอันดับสูตร
+          </a>
+          <a href="/recommend" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'recommend' %}bg-indigo-600 text-white shadow-sm{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+            เลขเด่น & คัดลอก
+          </a>
+          <a href="/manage" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'manage' %}bg-indigo-600 text-white shadow-sm{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+            จัดการข้อมูลผล
+          </a>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <div class="flex md:hidden">
+          <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" aria-label="Toggle navigation">
+            <svg id="menu-icon-open" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg id="menu-icon-close" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-2 pb-4 space-y-1">
+      <a href="/" class="block px-3 py-2.5 rounded-lg text-base font-medium {% if active_page == 'index' %}bg-indigo-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">แดชบอร์ดสด</a>
+      <a href="/stats" class="block px-3 py-2.5 rounded-lg text-base font-medium {% if active_page == 'stats' %}bg-indigo-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">สถิติและความถี่</a>
+      <a href="/leaderboard" class="block px-3 py-2.5 rounded-lg text-base font-medium {% if active_page == 'leaderboard' %}bg-indigo-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">จัดอันดับสูตร</a>
+      <a href="/recommend" class="block px-3 py-2.5 rounded-lg text-base font-medium {% if active_page == 'recommend' %}bg-indigo-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">เลขเด่น & คัดลอก</a>
+      <a href="/manage" class="block px-3 py-2.5 rounded-lg text-base font-medium {% if active_page == 'manage' %}bg-indigo-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">จัดการข้อมูลผล</a>
+    </div>
+  </nav>
+
+  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ================= GLOBAL TOAST CONTAINER ================= -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+
+  <!-- ================= GLOBAL FOOTER ================= -->
+  <footer class="bg-slate-900 border-t border-slate-800 mt-auto py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-4">
+      <div>
+        <p class="font-medium text-slate-300">ระบบคำนวณและวิเคราะห์สถิติหวยฮานอย (พิเศษ, ปกติ, VIP)</p>
+        <p>อัปเดตผลรางวัลอัตโนมัติ 17:30 น. | 18:30 น. | 19:30 น.</p>
+      </div>
+      <div class="flex items-center space-x-4 text-slate-500">
+        <span>Python 3.14 · Flask · SQLite</span>
+        <span>•</span>
+        <span class="inline-flex items-center gap-1 text-emerald-400 font-mono text-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> พร้อมทำงาน 100%
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core Client Scripts -->
+  <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
